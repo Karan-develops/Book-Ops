@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+*{
+  scrollbar-width: none;
+}
+
 @layer base {
   :root {
     --radius: 0.5rem;
