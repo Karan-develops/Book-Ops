@@ -1,8 +1,15 @@
 import Image from "next/image";
 import { Button } from "./ui/button";
 import BookCover from "./BookCover";
+import { db } from "@/database/drizzle";
+import { users } from "@/database/schema";
+import { eq } from "drizzle-orm";
 
-const Bookoverview = ({
+interface Props extends Book {
+  userId: string;
+}
+
+const Bookoverview = async ({
   title,
   author,
   genre,
@@ -13,7 +20,13 @@ const Bookoverview = ({
   coverColor,
   coverUrl,
   id,
-}: Book) => {
+  userId,
+}: Props) => {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   return (
     <section className="book-overview">
       <div className="flex flex-1 flex-col gap-5">
