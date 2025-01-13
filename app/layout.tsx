@@ -23,7 +23,7 @@ const bebasNeue = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Create Next App",
+  title: "Book-Ops",
   description:
     "BookOps is a book borrowing university library management solution.",
 };
