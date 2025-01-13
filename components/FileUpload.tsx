@@ -1,17 +1,35 @@
 "use client";
 
-import { toast } from "@/hooks/use-toast";
-import config from "@/lib/config";
-import { cn } from "@/lib/utils";
 import { IKImage, ImageKitProvider, IKUpload, IKVideo } from "imagekitio-next";
-import Image from "next/image";
+import config from "@/lib/config";
 import { useRef, useState } from "react";
+import Image from "next/image";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const {
   env: {
     imagekit: { publicKey, url },
   },
 } = config;
+
+const authenticator = async () => {
+  try {
+    const response = await fetch(`${config.env.apiEndpoint}/api/auth/imagekit`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Request failed with status ${response.status}: ${errorText}`
+      );
+    }
+    const data = await response.json();
+    const { signature, expire, token } = data;
+
+    return { token, expire, signature };
+  } catch (error: any) {
+    throw new Error(`Authentication request failed: ${error.message}`);
+  }
+};
 
 interface Props {
   type: "image" | "video";
@@ -23,28 +41,6 @@ interface Props {
   value?: string;
 }
 
-const authenticator = async () => {
-  try {
-    const response = await fetch(`${config.env.apiEndpoint}/api/auth/imagekit`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Req failed with status: ${response.status}:${errorText}`
-      );
-    }
-    const data = await response.json();
-    const { signature, expire, token } = data;
-
-    return {
-      signature,
-      expire,
-      token,
-    };
-  } catch (error: any) {
-    throw new Error("Authentication request failed:", error.message);
-  }
-};
-
 const FileUpload = ({
   type,
   accept,
@@ -55,10 +51,10 @@ const FileUpload = ({
   value,
 }: Props) => {
   const ikUploadRef = useRef(null);
-  const [progress, setProgress] = useState(0);
   const [file, setFile] = useState<{ filePath: string | null }>({
     filePath: value ?? null,
   });
+  const [progress, setProgress] = useState(0);
 
   const styles = {
     button:
@@ -70,7 +66,7 @@ const FileUpload = ({
   };
 
   const onError = (error: any) => {
-    console.log("Error uploading file:", error);
+    console.log(error);
 
     toast({
       title: `${type} upload failed`,
@@ -89,6 +85,30 @@ const FileUpload = ({
     });
   };
 
+  const onValidate = (file: File) => {
+    if (type === "image") {
+      if (file.size > 20 * 1024 * 1024) {
+        toast({
+          title: "File size too large",
+          description: "Please upload a file that is less than 20MB in size",
+          variant: "destructive",
+        });
+
+        return false;
+      }
+    } else if (type === "video") {
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "File size too large",
+          description: "Please upload a file that is less than 50MB in size",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
   return (
     <ImageKitProvider
       publicKey={publicKey}
@@ -96,11 +116,19 @@ const FileUpload = ({
       authenticator={authenticator}
     >
       <IKUpload
-        className="hidden"
         ref={ikUploadRef}
         onError={onError}
         onSuccess={onSuccess}
-        fileName="test-upload.png"
+        useUniqueFileName={true}
+        validateFile={onValidate}
+        onUploadStart={() => setProgress(0)}
+        onUploadProgress={({ loaded, total }) => {
+          const percent = Math.round((loaded / total) * 100);
+          setProgress(percent);
+        }}
+        folder={folder}
+        accept={accept}
+        className="hidden"
       />
       <button
         className={cn("upload-btn", styles.button)}

@@ -6,7 +6,7 @@ import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import React, { ReactNode } from "react";
-import "@/styles/admin.css"
+import "@/styles/admin.css";
 
 const layout = async ({ children }: { children: ReactNode }) => {
   const session = await auth();

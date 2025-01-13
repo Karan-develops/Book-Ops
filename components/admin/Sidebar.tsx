@@ -1,3 +1,5 @@
+"use client"
+
 import { adminSideBarLinks } from "@/constants";
 import { cn, getInitials } from "@/lib/utils";
 import { Session } from "next-auth";
